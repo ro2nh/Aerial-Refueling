@@ -469,13 +469,6 @@ if(!isDedicated) then
 										[_refuelingPlane, _cable, _i] call RH_ReleaseCable;
 										_isOut = true;
 									};
-
-									//debugging
-									_pos = ropeEndPosition _cable select 0;
-									_obj = createVehicle["R_TBG32V_F", [0,0,0], [], 0, "CAN_COLLIDE"];
-									_obj attachTo [_cable, [0,0,0]];
-									//debugging
-
 									// Checks if player's plane is close to the end of the cable
 									_isPlayerPlaneCloseToCable = [_cable] call RH_IsPlayerPlaneCloseToCable;
 									if(_isPlayerPlaneCloseToCable) then
