@@ -1,11 +1,19 @@
 /*
 Notes:
- - Fix 'RH_IsAirborne' function (Changed it for debugging purposes)
+ - See what happens if refueling plane get destoryed
+ - Replace rope with cable model:
+  - Black thick cable with an connection object
+ - Add refueling on the ground using ace mod to the external fuel
+ - Add fuel gui on the refueling plane
+ - Add radio transmissions to actions
+ - TODO: When refueling plane is idle for few minutes pull cable in
+ - Ver.2.0:
+  - Refueling controlled by a player
 */
 
 RH_REFUELING_SUPPORTED_VEHICLES = [
-	"I_C_Plane_Civil_01_F",
-	"B_Plane_CAS_01_dynamicLoadout_F"
+	"B_Plane_CAS_01_dynamicLoadout_F",
+	"B_Plane_Fighter_01_F"
 ];
 
 RH_REFUELING_PLANES_TYPES = [
@@ -18,7 +26,7 @@ DISTANCE_TO_CABLE = 50;
 
 BASIC_MAX_CABLES = 2;
 CABLE_WIND_SPEED = 25;
-MAX_CABLE_LENGTH = 200;
+MAX_CABLE_LENGTH = 100;
 
 BASIC_MAX_FUEL_CAPACITY = 5;
 
@@ -96,7 +104,7 @@ RH_AddActionsToPlayer =
 		{
 			[_closest] call RH_ReportLocation;
 		};
-	}, nil, 0, false, false, "", "call RH_IsRefuelingPlaneFar"];
+	}, nil, 0, false, false, "", ""];
 
 	player addAction["Request Refuel", {
 		[] call RH_RequestRefuel;
@@ -113,7 +121,8 @@ RH_AddActionsToPlayer =
 RH_ReportLocation =
 {
 	params["_plane"];
-	hint mapGridPosition _plane;
+	_planeSpeed = speed _plane;
+	hint format["%1\n%2", mapGridPosition _plane, _planeSpeed];
 
 	systemChat "REPORTING";
 };
@@ -162,7 +171,6 @@ RH_GetCoPilot =
 // Checks if the unit is airborne
 // Input: unit
 // Output: true if it is airborne else returns false
-/*
 RH_IsAirborne =
 {
 	params ["_unit"];
@@ -176,14 +184,6 @@ RH_IsAirborne =
 		true
 	};
 	false
-};
-*/
-// Only for debugging
-RH_IsAirborne =
-{
-	params ["_unit"];
-
-	true
 };
 
 
@@ -244,8 +244,19 @@ RH_CreateBasicRefuelingPlane =
 	// Setting up cables
 	for "_i" from 0 to BASIC_MAX_CABLES do
 	{
+		// Getting the cable position
+		_cablePos = [0, 0, 0];
+		if(_i == 0) then
+		{
+			_cablePos = [10, 0, 0];
+		}
+		else
+		{
+			_cablePos = [-10, 0, 0];
+		};
+
 		_cablesObj = [];
-		_cablesObj pushBack ropeCreate[_plane, [0, 0, 0], 0];
+		_cablesObj pushBack ropeCreate[_plane, _cablePos, 0];
 		_cablesObj pushBack _isOut;
 		_cablesObj pushBack _isTransferring;
 
@@ -289,7 +300,7 @@ RH_IsPlayerPlaneCloseToCable =
 {
 	params["_cable"];
 
-	_pos = ropeEndPosition _cable select 0;
+	_pos = ropeEndPosition _cable select 1;
 	_pos2 = getPosATL vehicle player;
 
 	if(_pos distance _pos2 <= DISTANCE_TO_CABLE) exitWith
@@ -306,8 +317,23 @@ RH_ConnectCable =
 {
 	params["_plane", "_cable", "_cableIndex"];
 
-	[vehicle player, [0, 0, 0], [0, 0, -1]] ropeAttachTo _cable;
-	vehicle player attachTo [_plane, [0, -100, 0]];
+	// Attaching the cable to the player's plane
+	_veh = vehicle player;
+	[_veh, [0, 5, 0], [0, 0, -1]] ropeAttachTo _cable;
+	_attachPos = 	[abs ((getPos _cable select 0) - (getPos _plane select 0)),
+					 abs ((getPos _cable select 1) - (getPos _plane select 1)),
+					 abs ((getPos _cable select 2) - (getPos _plane select 2))];
+
+	if(_cableIndex == 0) then
+	{
+		_attachPos set[0, ((_attachPos select 0) + 50)];
+	}
+	else
+	{
+		_attachPos set[0, ((_attachPos select 0) - 50)];
+	};
+	_attachPos set[1, ((_attachPos select 1) - 100)];
+	_veh attachTo [_plane, _attachPos];
 
 	// Updating 'cables'
 	_cables = _plane getVariable["Cables", objNull];
@@ -322,6 +348,7 @@ RH_ConnectCable =
 	// Updating player
 	player setVariable["RefuelRequested", false];
 	player setVariable["Refueling", true];
+	player setVariable["Velocity", (velocity _veh)];
 
 	// Add disconnect action to the player
 	player addAction["Disconnect Cable", {
@@ -336,8 +363,14 @@ RH_DisconnectCable =
 {
 	params["_plane", "_cable", "_cableIndex"];
 
-	vehicle player ropeDetach _cable;
-	detach vehicle player;
+	_veh = vehicle player;
+	_veh ropeDetach _cable;
+	detach _veh;
+
+	// Turning engine on
+	_veh engineOn true;
+	_playerVelocity = player getVariable["Velocity", [0, 0, 0]];
+	_veh setVelocity _playerVelocity;
 
 	// Updating 'cables'
 	_cables = _plane getVariable["Cables", objNull];
