@@ -2,7 +2,6 @@
 Notes:
  - Replace rope with cable model:
   - Black thick cable with an connection object
- - Add refueling on the ground using ace mod to the external fuel
  - Add radio transmissions to actions
  - Attach fuel objects to plane:
   - A hole that the cable comes out of
@@ -10,6 +9,7 @@ Notes:
  - Ver.2.0:
   - Refueling controlled by a player
   - Fuel gui on the refueling plane
+  - Add refueling on the ground using ace mod to the external fuel
 
   Search for 'Continue from here'
   Before releasing the mod - remove 'debugging' from the code
