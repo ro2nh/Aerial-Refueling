@@ -4,11 +4,14 @@ Notes:
  - Replace rope with cable model:
   - Black thick cable with an connection object
  - Add refueling on the ground using ace mod to the external fuel
- - Add fuel gui on the refueling plane
  - Add radio transmissions to actions
- - TODO: When refueling plane is idle for few minutes pull cable in
  - Ver.2.0:
   - Refueling controlled by a player
+  - Fuel gui on the refueling plane
+
+  Search for 'Continue from here'
+  Before releasing the mod - remove 'debugging' from the code
+  Create a new mod of Cockpit-Control using mouse
 */
 
 RH_REFUELING_SUPPORTED_VEHICLES = [
@@ -31,6 +34,11 @@ MAX_CABLE_LENGTH = 100;
 BASIC_MAX_FUEL_CAPACITY = 5;
 
 REFUELING_SPEED = 0.05;
+
+IDLE_TIME = 4 * 60;
+//debugging
+IDLE_TIME = 5; // seconds
+//debugging
 
 Planes = [];
 
@@ -122,9 +130,8 @@ RH_ReportLocation =
 {
 	params["_plane"];
 	_planeSpeed = speed _plane;
-	hint format["%1\n%2", mapGridPosition _plane, _planeSpeed];
-
-	systemChat "REPORTING";
+	_planeHeight = getPosATL _plane select 2;
+	hint format["%1\n%2 km/h\nHeight: %3", mapGridPosition _plane, _planeSpeed, _planeHeight];
 };
 
 // Sets a request of refueling from the player
@@ -242,7 +249,7 @@ RH_CreateBasicRefuelingPlane =
 	_fuel = BASIC_MAX_FUEL_CAPACITY;
 
 	// Setting up cables
-	for "_i" from 0 to BASIC_MAX_CABLES do
+	for "_i" from 0 to (BASIC_MAX_CABLES - 1) do
 	{
 		// Getting the cable position
 		_cablePos = [0, 0, 0];
@@ -293,12 +300,40 @@ RH_ReleaseCable =
 	};
 };
 
+// Pulling a chosen cable up to the refueling plane
+// Input: plane, cable, cable index
+// Output: none
+RH_PullCableUp =
+{
+	params["_plane", "_cable", "_cableIndex"];
+
+	ropeUnwind [_cable, CABLE_WIND_SPEED, -MAX_CABLE_LENGTH, true];
+
+	sleep (MAX_CABLE_LENGTH / CABLE_WIND_SPEED);
+
+	// Updating 'cables' variable
+	_cables = _plane getVariable ["Cables", objNull];
+	if!(_cables isEqualTo objNull) then
+	{
+		_singleCable = _cables select _cableIndex;
+		_singleCable set [1, false];
+		_cables set [_cableIndex, _singleCable];
+		_plane setVariable["Cables", _cables];
+	};
+};
+
 // Checks if the player's plane is close to the end of the cable
 // Input: cable
 // Output: true if close, false otherwise
 RH_IsPlayerPlaneCloseToCable =
 {
 	params["_cable"];
+
+	// Checking if cable exists
+	if(_cable isEqualTo objNull) exitWith
+	{
+		false
+	};
 
 	_pos = ropeEndPosition _cable select 1;
 	_pos2 = getPosATL vehicle player;
@@ -442,6 +477,37 @@ if(!isDedicated) then
 
 	while { true } do
 	{
+		{
+			// Check if refueling plane is idle for some time
+			_cables = _x getVariable["Cables", objNull];
+			if(_cables isEqualTo objNull) exitWith { true };
+			_numOfCables = count _cables - 1;
+			for "_i" from 0 to _numOfCables do
+			{
+				_cable = _cables select _i select 0;
+				_isOut = _cables select _i select 1;
+				_isTransferring = _cables select _i select 2;
+				// Check if the transferring from this cable and cable is out
+				if(!(_isTransferring) && _isOut) then
+				{
+					_timer = _cable getVariable["IdleTimer", -1];
+					if(_timer == -1) then
+					{
+						_cable setVariable["IdleTimer", IDLE_TIME];
+						_timer = IDLE_TIME;
+					};
+					if(_timer == 0) then
+					{
+						// Times up
+						// Resetting timer and pulling cable up
+						_cable setVariable["IdleTimer", IDLE_TIME];
+						[_x, _cable, _i] call RH_PullCableUp;
+					};
+					_timer = _timer - 1;
+					_cable setVariable["IdleTimer", _timer];
+				};
+			};
+		} forEach Planes;
 		if(!isNull player && isPlayer player) then
 		{
 			// Check if there are refueling planes
