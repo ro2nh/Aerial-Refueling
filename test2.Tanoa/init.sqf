@@ -23,22 +23,19 @@ RH_REFUELING_PLANES_TYPES = [
 	"B_T_VTOL_01_armed_F"
 ];
 
-MAX_MAP_DISTANCE = 7000;
-REQUEST_DISTANCE = 1000;
-DISTANCE_TO_CABLE = 50;
+MAX_MAP_DISTANCE = 7000;	// meters
+REQUEST_DISTANCE = 1000;	// meters
+DISTANCE_TO_CABLE = 50;		// meters
 
 BASIC_MAX_CABLES = 2;
-CABLE_WIND_SPEED = 25;
-MAX_CABLE_LENGTH = 100;
+CABLE_WIND_SPEED = 25;		// meters per seconds
+MAX_CABLE_LENGTH = 100;		// meters
 
-BASIC_MAX_FUEL_CAPACITY = 5;
+BASIC_MAX_FUEL_CAPACITY = 5; // 5 full tanks
 
-REFUELING_SPEED = 0.05;
+REFUELING_SPEED = 0.05; 	// meters per second
 
-IDLE_TIME = 4 * 60;
-//debugging
-IDLE_TIME = 5; // seconds
-//debugging
+IDLE_TIME = 4 * 60; 		// 4 minutes
 
 Planes = [];
 
