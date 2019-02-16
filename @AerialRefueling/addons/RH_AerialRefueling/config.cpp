@@ -6,9 +6,32 @@ class CfgPatches
         author = "Ron.H";
 
         requiredVersion = 1.0;
-        requiredAddons[] = {"A3_Modules_F"};
+        requiredAddons[] = {"A3_Modules_F", "A3_Data_F"};
 
         units[] = {};
+    };
+};
+
+class CfgVehicles
+{
+    class All;
+    
+    class Rope: All
+    {
+        model = "\RH_AerialRefueling\proxies\Rope\rope.p3d";
+    };
+};
+
+class CfgNonAIVehicles
+{
+    class RopeSegment
+    {
+        model = "\RH_AerialRefueling\proxies\Rope\rope.p3d";
+    };
+
+    class RopeEnd: RopeSegment
+    {
+        model = "\A3\Data_f\Hook\Hook_F.p3d";
     };
 };
 
