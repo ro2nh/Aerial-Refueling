@@ -496,8 +496,13 @@ if(isServer) then
 
 if(hasInterface) then
 {
+	systemChat "Waiting for planes";
 	waitUntil { not isNil "Planes"; };
-	systemChat format["Planes: %1", count Planes];
+	while { true } do
+	{
+		systemChat format["Planes: %1", count Planes];
+		sleep 1;
+	};
 };
 
 /*
