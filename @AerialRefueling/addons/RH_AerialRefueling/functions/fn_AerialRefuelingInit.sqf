@@ -11,10 +11,12 @@ Notes:
   - Fuel gui on the refueling plane
   - Add refueling on the ground using ace mod to the external fuel
 
-  Search for 'Continue from here'
-  Before releasing the mod - remove 'debugging' from the code
   Create a new mod of Cockpit-Control using mouse
 */
+
+// Debugging the code
+// Usage: if(DebugCode) then { systemChat "debug message"; };
+DebugCode = true;
 
 RH_REFUELING_SUPPORTED_VEHICLES = [
 	"B_Plane_CAS_01_dynamicLoadout_F",
@@ -30,7 +32,7 @@ REQUEST_DISTANCE = 1000;	// meters
 DISTANCE_TO_CABLE = 50;		// meters
 
 BASIC_MAX_CABLES = 2;
-CABLE_WIND_SPEED = 10;		// meters per seconds
+CABLE_WIND_SPEED = 25;		// meters per seconds
 MAX_CABLE_LENGTH = 100;		// meters
 
 BASIC_MAX_FUEL_CAPACITY = 5; // 5 full tanks
@@ -120,6 +122,8 @@ RH_AddActionsToPlayer =
 	player addAction["Cancel Request", {
 		[] call RH_CancelRequest;
 	}, nil, 0, false, true, "", "call RH_IsPlayerRequestedRefuel"];
+
+	if(DebugCode) then { systemChat "Actions were added to the player"; };
 };
 
 // Reports the location of a given plane
@@ -131,18 +135,24 @@ RH_ReportLocation =
 	_planeSpeed = speed _plane;
 	_planeHeight = getPosATL _plane select 2;
 	hint format["%1\n%2 km/h\nHeight: %3", mapGridPosition _plane, _planeSpeed, _planeHeight];
+
+	if(DebugCode) then { systemChat "Location was reported"; };
 };
 
 // Sets a request of refueling from the player
 RH_RequestRefuel =
 {
 	player setVariable["RefuelRequested", true];
+
+	if(DebugCode) then { systemChat "Requested refuel"; };
 };
 
 // Deletes a player request
 RH_CancelRequest =
 {
 	player setVariable["RefuelRequested", false];
+
+	if(DebugCode) then { systemChat "Request was canceled"; };
 };
 
 // Checks if the refueling plane is far from the player's plane
@@ -297,6 +307,8 @@ RH_ReleaseCable =
 		_cables set [_cableIndex, _singleCable];
 		_plane setVariable["Cables", _cables];
 	};
+
+	if(DebugCode) then { systemChat "Cable was released"; };
 };
 
 // Pulling a chosen cable up to the refueling plane
@@ -319,6 +331,8 @@ RH_PullCableUp =
 		_cables set [_cableIndex, _singleCable];
 		_plane setVariable["Cables", _cables];
 	};
+
+	if(DebugCode) then { systemChat "Cable was pull up"; };
 };
 
 // Checks if the player's plane is close to the end of the cable
@@ -388,6 +402,8 @@ RH_ConnectCable =
 	player addAction["Disconnect Cable", {
 		player setVariable["Refueling", false];
 	}, nil, 0, false, true, "", "call RH_IsPlayerRefueling"];
+
+	if(DebugCode) then { systemChat "Cable is connected"; };
 };
 
 // Disconnects the cable attached from refueling plane to the player's plane
@@ -418,6 +434,8 @@ RH_DisconnectCable =
 	
 	// Updating player
 	player setVariable["Refueling", false];
+
+	if(DebugCode) then { systemChat "Cable disconnected"; };
 };
 
 // Refueling the player's plane
@@ -430,6 +448,7 @@ RH_RefuelPlayerPlane =
 	[_plane, _cable, _cableIndex] call RH_ConnectCable;
 
 	// Transfering fuel
+	if(DebugCode) then { systemChat "Refueling"; };
 	[_plane] call RH_TransferFuel;
 
 	[_plane, _cable, _cableIndex] call RH_DisconnectCable;
@@ -466,6 +485,22 @@ RH_TransferFuel =
 	};
 };
 
+if(isServer) then
+{
+	// Initiallizing all refueling planes
+	{
+		[_x] call RH_CreateBasicRefuelingPlane;
+	} forEach nearestObjects [player, RH_REFUELING_PLANES_TYPES, MAX_MAP_DISTANCE];
+	publicVariable "Planes";
+};
+
+if(hasInterface) then
+{
+	waitUntil { not isNil "Planes"; };
+	systemChat format["Planes: %1", count Planes];
+};
+
+/*
 // Single Player
 if(!isDedicated) then
 {
@@ -525,8 +560,8 @@ if(!isDedicated) then
 					// Installation
 					[] call RH_InstallPlayerAttributes;
 					[] spawn RH_AddActionsToPlayer;
-					// debug
-					//hint "Installed";
+					
+					if(DebugCode) then { systemChat "Installed"; };
 				};
 				if(_isInstalled && typeOf _veh in RH_REFUELING_SUPPORTED_VEHICLES && (driver _veh isEqualTo player || _coPilot isEqualTo player)) exitWith
 				{
@@ -585,11 +620,12 @@ if(!isDedicated) then
 				if(_isInstalled) then
 				{
 					[] call RH_UninstallPlayerAttributes;
-					// debug
-					//hint "Uninstalled";
+					
+					if(DebugCode) then { systemChat "Uninstalled"; };
 				};
 			};
 		};
 		sleep 1;
 	};
 };
+*/
