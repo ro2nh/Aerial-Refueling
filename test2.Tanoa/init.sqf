@@ -14,6 +14,7 @@ Notes:
   Create a new mod of Cockpit-Control using mouse
 */
 
+// Debugging the code
 // Usage: if(DebugCode) then { systemChat "debug message"; };
 DebugCode = true;
 
