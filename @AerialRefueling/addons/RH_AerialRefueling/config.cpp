@@ -19,6 +19,8 @@ class CfgVehicles
     class Rope: All
     {
         model = "\RH_AerialRefueling\proxies\Rope\rope.p3d";
+        hiddenSelections[] = {"pipe"};
+		//hiddenSelectionsTextures[] = {"","a3\data_f\proxies\rope\data\rope_co.paa"};
     };
 };
 
@@ -27,6 +29,8 @@ class CfgNonAIVehicles
     class RopeSegment
     {
         model = "\RH_AerialRefueling\proxies\Rope\rope.p3d";
+        hiddenSelections[] = {"pipe"};
+		//hiddenSelectionsTextures[] = {"","a3\data_f\proxies\rope\data\rope_co.paa"};
     };
 
     class RopeEnd: RopeSegment

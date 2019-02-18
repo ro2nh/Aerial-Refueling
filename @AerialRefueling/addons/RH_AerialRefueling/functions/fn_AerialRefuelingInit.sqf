@@ -271,8 +271,13 @@ RH_CreateBasicRefuelingPlane =
 			_cablePos = [-10, 0, 0];
 		};
 
+		_cable = ropeCreate[_plane, _cablePos, 0];
+		//Not working yet
+		_cable setObjectTexture [0, "\RH_AerialRefueling\data\cable.paa"];
+		_cable setObjectTexture [1, ""];
+
 		_cablesObj = [];
-		_cablesObj pushBack ropeCreate[_plane, _cablePos, 0];
+		_cablesObj pushBack _cable;
 		_cablesObj pushBack _isOut;
 		_cablesObj pushBack _isTransferring;
 
@@ -308,6 +313,9 @@ RH_ReleaseCable =
 		_plane setVariable["Cables", _cables];
 	};
 
+	// Updating all clients
+	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
+
 	if(DebugCode) then { systemChat "Cable was released"; };
 };
 
@@ -331,6 +339,9 @@ RH_PullCableUp =
 		_cables set [_cableIndex, _singleCable];
 		_plane setVariable["Cables", _cables];
 	};
+
+	// Updating all clients
+	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
 
 	if(DebugCode) then { systemChat "Cable was pull up"; };
 };
@@ -392,6 +403,9 @@ RH_ConnectCable =
 		_cables set [_cableIndex, _singleCable];
 		_plane setVariable["Cables", _cables];
 	};
+
+	// Updating all clients
+	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
 	
 	// Updating player
 	player setVariable["RefuelRequested", false];
@@ -431,6 +445,9 @@ RH_DisconnectCable =
 		_cables set [_cableIndex, _singleCable];
 		_plane setVariable["Cables", _cables];
 	};
+
+	// Updating all clients
+	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
 	
 	// Updating player
 	player setVariable["Refueling", false];
@@ -438,7 +455,7 @@ RH_DisconnectCable =
 	if(DebugCode) then { systemChat "Cable disconnected"; };
 };
 
-// Refueling the player's plane
+// Refuels the player's plane
 // Input: plane, cable, cable index
 // Output: none
 RH_RefuelPlayerPlane =
@@ -454,7 +471,7 @@ RH_RefuelPlayerPlane =
 	[_plane, _cable, _cableIndex] call RH_DisconnectCable;
 };
 
-// Transferring fuel from the refueling plane to the player
+// Transfers fuel from the refueling plane to the player
 RH_TransferFuel =
 {
 	_isCompleted = false;
@@ -485,29 +502,29 @@ RH_TransferFuel =
 	};
 };
 
-if(isServer) then
+
+// Updates 'Planes' global variable
+// Input: plane, cables
+// Output: none
+RH_UpdatePlanes =
 {
-	// Initiallizing all refueling planes
+	params["_plane", "_cables"];
+
 	{
-		[_x] call RH_CreateBasicRefuelingPlane;
-	} forEach nearestObjects [player, RH_REFUELING_PLANES_TYPES, MAX_MAP_DISTANCE];
-	publicVariable "Planes";
+		if(_x isEqualTo _plane) exitWith
+		{
+			if!(_cables isEqualTo objNull) then
+			{
+				_x setVariable["Cables", _cables];
+			}
+		};
+	} forEach Planes;
+
+	if(DebugCode) then { systemChat "Plane updated"; };
 };
 
+// Checks if this is a real player
 if(hasInterface) then
-{
-	systemChat "Waiting for planes";
-	waitUntil { not isNil "Planes"; };
-	while { true } do
-	{
-		systemChat format["Planes: %1", count Planes];
-		sleep 1;
-	};
-};
-
-/*
-// Single Player
-if(!isDedicated) then
 {
 	// Initiallizing all refueling planes
 	{
@@ -633,4 +650,3 @@ if(!isDedicated) then
 		sleep 1;
 	};
 };
-*/
