@@ -1,15 +1,17 @@
 /*
 Notes:
- - Replace rope with cable model:
-  - Black thick cable with an connection object
+ - Replace rope with pipe model:
+  - Black thick pipe with an connection object
  - Add radio transmissions to actions
  - Attach fuel objects to plane:
-  - A hole that the cable comes out of
-  - A receiver to the requested plane that the cable connects to
+  - A hole that the pipe comes out of
+  - A receiver to the requested plane that the pipe connects to
  - Ver.2.0:
   - Refueling controlled by a player
   - Fuel gui on the refueling plane
   - Add refueling on the ground using ace mod to the external fuel
+
+  Search for 'setObjectTexture'
 
   Create a new mod of Cockpit-Control using mouse
 */
@@ -29,11 +31,11 @@ RH_REFUELING_PLANES_TYPES = [
 
 MAX_MAP_DISTANCE = 7000;	// meters
 REQUEST_DISTANCE = 1000;	// meters
-DISTANCE_TO_CABLE = 50;		// meters
+DISTANCE_TO_PIPE = 50;		// meters
 
-BASIC_MAX_CABLES = 2;
-CABLE_WIND_SPEED = 25;		// meters per seconds
-MAX_CABLE_LENGTH = 100;		// meters
+BASIC_MAX_PIPES = 2;
+PIPE_WIND_SPEED = 25;		// meters per seconds
+MAX_PIPE_LENGTH = 100;		// meters
 
 BASIC_MAX_FUEL_CAPACITY = 5; // 5 full tanks
 
@@ -244,7 +246,7 @@ RH_GetClosestRefuelingPlane =
 
 // Creates a basic refueling plane variables
 //  _plane["ExternalFuel"] = Fuel
-//  _plane["Cables"] = [[ropeObj, false, false], [ropeObj, false, false]]
+//  _plane["Pipes"] = [[ropeObj, false, false], [ropeObj, false, false]]
 // Input: plane
 // Output: none
 RH_CreateBasicRefuelingPlane =
@@ -252,114 +254,114 @@ RH_CreateBasicRefuelingPlane =
 	params["_plane"];
 
 	// Setting up variables
-	_cables = [];
+	_pipes = [];
 	_isOut = false;
 	_isTransferring = false;
 	_fuel = BASIC_MAX_FUEL_CAPACITY;
 
-	// Setting up cables
-	for "_i" from 0 to (BASIC_MAX_CABLES - 1) do
+	// Setting up pipes
+	for "_i" from 0 to (BASIC_MAX_PIPES - 1) do
 	{
-		// Getting the cable position
-		_cablePos = [0, 0, 0];
+		// Getting the pipe position
+		_pipePos = [0, 0, 0];
 		if(_i == 0) then
 		{
-			_cablePos = [10, 0, 0];
+			_pipePos = [10, 0, 0];
 		}
 		else
 		{
-			_cablePos = [-10, 0, 0];
+			_pipePos = [-10, 0, 0];
 		};
 
-		_cable = ropeCreate[_plane, _cablePos, 0];
+		_pipe = ropeCreate[_plane, _pipePos, 0];
 		//Not working yet
-		_cable setObjectTexture [0, "\RH_AerialRefueling\data\cable.paa"];
-		_cable setObjectTexture [1, ""];
+		_pipe setObjectTexture [0, "\RH_AerialRefueling\data\pipe.paa"];
+		_pipe setObjectTexture [1, ""];
 
-		_cablesObj = [];
-		_cablesObj pushBack _cable;
-		_cablesObj pushBack _isOut;
-		_cablesObj pushBack _isTransferring;
+		_pipesObj = [];
+		_pipesObj pushBack _pipe;
+		_pipesObj pushBack _isOut;
+		_pipesObj pushBack _isTransferring;
 
-		_cables pushBack _cablesObj;
+		_pipes pushBack _pipesObj;
 	};
 
 	// Storing variables inside the plane variable space
 	_plane setVariable["ExternalFuel", BASIC_MAX_FUEL_CAPACITY];
-	_plane setVariable["Cables", _cables];
+	_plane setVariable["Pipes", _pipes];
 
 	// Adding plane to the list
 	Planes pushBack _plane;
 };
 
-// Releases a chosen cable from the refueling plane
-// Input: plane, cable, cable index
+// Releases a chosen pipe from the refueling plane
+// Input: plane, pipe, pipe index
 // Output: none
 RH_ReleaseCable =
 {
-	params["_plane", "_cable", "_cableIndex"];
+	params["_plane", "_pipe", "_pipeIndex"];
 
-	ropeUnwind [_cable, CABLE_WIND_SPEED, MAX_CABLE_LENGTH];
+	ropeUnwind [_pipe, PIPE_WIND_SPEED, MAX_PIPE_LENGTH];
 
-	sleep (MAX_CABLE_LENGTH / CABLE_WIND_SPEED);
+	sleep (MAX_PIPE_LENGTH / PIPE_WIND_SPEED);
 
-	// Updating 'cables' variable
-	_cables = _plane getVariable ["Cables", objNull];
-	if!(_cables isEqualTo objNull) then
+	// Updating 'pipes' variable
+	_pipes = _plane getVariable ["Pipes", objNull];
+	if!(_pipes isEqualTo objNull) then
 	{
-		_singleCable = _cables select _cableIndex;
-		_singleCable set [1, true];
-		_cables set [_cableIndex, _singleCable];
-		_plane setVariable["Cables", _cables];
+		_singlePipe = _pipes select _pipeIndex;
+		_singlePipe set [1, true];
+		_pipes set [_pipeIndex, _singlePipe];
+		_plane setVariable["Pipes", _pipes];
 	};
 
 	// Updating all clients
-	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
+	[_plane, _pipes] remoteExecCall ["RH_UpdatePlanes"];
 
-	if(DebugCode) then { systemChat "Cable was released"; };
+	if(DebugCode) then { systemChat "Pipe was released"; };
 };
 
-// Pulling a chosen cable up to the refueling plane
-// Input: plane, cable, cable index
+// Pulling a chosen pipe up to the refueling plane
+// Input: plane, pipe, pipe index
 // Output: none
 RH_PullCableUp =
 {
-	params["_plane", "_cable", "_cableIndex"];
+	params["_plane", "_pipe", "_pipeIndex"];
 
-	ropeUnwind [_cable, CABLE_WIND_SPEED, -MAX_CABLE_LENGTH, true];
+	ropeUnwind [_pipe, PIPE_WIND_SPEED, -MAX_PIPE_LENGTH, true];
 
-	sleep (MAX_CABLE_LENGTH / CABLE_WIND_SPEED);
+	sleep (MAX_PIPE_LENGTH / PIPE_WIND_SPEED);
 
-	// Updating 'cables' variable
-	_cables = _plane getVariable ["Cables", objNull];
-	if!(_cables isEqualTo objNull) then
+	// Updating 'pipes' variable
+	_pipes = _plane getVariable ["Pipes", objNull];
+	if!(_pipes isEqualTo objNull) then
 	{
-		_singleCable = _cables select _cableIndex;
-		_singleCable set [1, false];
-		_cables set [_cableIndex, _singleCable];
-		_plane setVariable["Cables", _cables];
+		_singlePipe = _pipes select _pipeIndex;
+		_singlePipe set [1, false];
+		_pipes set [_pipeIndex, _singlePipe];
+		_plane setVariable["Pipes", _pipes];
 	};
 
 	// Updating all clients
-	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
+	[_plane, _pipes] remoteExecCall ["RH_UpdatePlanes"];
 
-	if(DebugCode) then { systemChat "Cable was pull up"; };
+	if(DebugCode) then { systemChat "Pipe was pull up"; };
 };
 
-// Checks if the player's plane is close to the end of the cable
-// Input: cable
+// Checks if the player's plane is close to the end of the pipe
+// Input: pipe
 // Output: true if close, false otherwise
 RH_IsPlayerPlaneCloseToCable =
 {
-	params["_cable"];
+	params["_pipe"];
 
-	// Checking if cable exists
-	if(_cable isEqualTo objNull) exitWith
+	// Checking if pipe exists
+	if(_pipe isEqualTo objNull) exitWith
 	{
 		false
 	};
 
-	_pos = ropeEndPosition _cable select 1;
+	_pos = ropeEndPosition _pipe select 1;
 	_pos2 = getPosATL vehicle player;
 
 	if(_pos distance _pos2 <= DISTANCE_TO_CABLE) exitWith
@@ -369,21 +371,21 @@ RH_IsPlayerPlaneCloseToCable =
 	false
 };
 
-// Connects a cable from the refueling plane to the player's plane
-// Input: plane, cable, cable index
+// Connects a pipe from the refueling plane to the player's plane
+// Input: plane, pipe, pipe index
 // Output: none
 RH_ConnectCable =
 {
-	params["_plane", "_cable", "_cableIndex"];
+	params["_plane", "_pipe", "_pipeIndex"];
 
-	// Attaching the cable to the player's plane
+	// Attaching the pipe to the player's plane
 	_veh = vehicle player;
-	[_veh, [0, 5, 0], [0, 0, -1]] ropeAttachTo _cable;
-	_attachPos = 	[abs ((getPos _cable select 0) - (getPos _plane select 0)),
-					 abs ((getPos _cable select 1) - (getPos _plane select 1)),
-					 abs ((getPos _cable select 2) - (getPos _plane select 2))];
+	[_veh, [0, 5, 0], [0, 0, -1]] ropeAttachTo _pipe;
+	_attachPos = 	[abs ((getPos _pipe select 0) - (getPos _plane select 0)),
+					 abs ((getPos _pipe select 1) - (getPos _plane select 1)),
+					 abs ((getPos _pipe select 2) - (getPos _plane select 2))];
 
-	if(_cableIndex == 0) then
+	if(_pipeIndex == 0) then
 	{
 		_attachPos set[0, ((_attachPos select 0) + 50)];
 	}
@@ -394,18 +396,18 @@ RH_ConnectCable =
 	_attachPos set[1, ((_attachPos select 1) - 100)];
 	_veh attachTo [_plane, _attachPos];
 
-	// Updating 'cables'
-	_cables = _plane getVariable["Cables", objNull];
-	if!(_cables isEqualTo objNull) then
+	// Updating 'pipes'
+	_pipes = _plane getVariable["Pipes", objNull];
+	if!(_pipes isEqualTo objNull) then
 	{
-		_singleCable = _cables select _cableIndex;
+		_singleCable = _pipes select _pipeIndex;
 		_singleCable set [3, true];
-		_cables set [_cableIndex, _singleCable];
-		_plane setVariable["Cables", _cables];
+		_pipes set [_pipeIndex, _singleCable];
+		_plane setVariable["Pipes", _pipes];
 	};
 
 	// Updating all clients
-	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
+	[_plane, _pipes] remoteExecCall ["RH_UpdatePlanes"];
 	
 	// Updating player
 	player setVariable["RefuelRequested", false];
@@ -413,22 +415,22 @@ RH_ConnectCable =
 	player setVariable["Velocity", (velocity _veh)];
 
 	// Add disconnect action to the player
-	player addAction["Disconnect Cable", {
+	player addAction["Disconnect Pipe", {
 		player setVariable["Refueling", false];
 	}, nil, 0, false, true, "", "call RH_IsPlayerRefueling"];
 
-	if(DebugCode) then { systemChat "Cable is connected"; };
+	if(DebugCode) then { systemChat "Pipe is connected"; };
 };
 
-// Disconnects the cable attached from refueling plane to the player's plane
-// Input: plane, cable, cable index
+// Disconnects the pipe attached from refueling plane to the player's plane
+// Input: plane, pipe, pipe index
 // Output: none
 RH_DisconnectCable =
 {
-	params["_plane", "_cable", "_cableIndex"];
+	params["_plane", "_pipe", "_pipeIndex"];
 
 	_veh = vehicle player;
-	_veh ropeDetach _cable;
+	_veh ropeDetach _pipe;
 	detach _veh;
 
 	// Turning engine on
@@ -436,39 +438,39 @@ RH_DisconnectCable =
 	_playerVelocity = player getVariable["Velocity", [0, 0, 0]];
 	_veh setVelocity _playerVelocity;
 
-	// Updating 'cables'
-	_cables = _plane getVariable["Cables", objNull];
-	if!(_cables isEqualTo objNull) then
+	// Updating 'pipes'
+	_pipes = _plane getVariable["Pipes", objNull];
+	if!(_pipes isEqualTo objNull) then
 	{
-		_singleCable = _cables select _cableIndex;
+		_singleCable = _pipes select _pipeIndex;
 		_singleCable set [3, false];
-		_cables set [_cableIndex, _singleCable];
-		_plane setVariable["Cables", _cables];
+		_pipes set [_pipeIndex, _singleCable];
+		_plane setVariable["Pipes", _pipes];
 	};
 
 	// Updating all clients
-	[_plane, _cables] remoteExecCall ["RH_UpdatePlanes"];
+	[_plane, _pipes] remoteExecCall ["RH_UpdatePlanes"];
 	
 	// Updating player
 	player setVariable["Refueling", false];
 
-	if(DebugCode) then { systemChat "Cable disconnected"; };
+	if(DebugCode) then { systemChat "Pipe disconnected"; };
 };
 
 // Refuels the player's plane
-// Input: plane, cable, cable index
+// Input: plane, pipe, pipe index
 // Output: none
 RH_RefuelPlayerPlane =
 {
-	params["_plane", "_cable", "_cableIndex"];
+	params["_plane", "_pipe", "_pipeIndex"];
 
-	[_plane, _cable, _cableIndex] call RH_ConnectCable;
+	[_plane, _pipe, _pipeIndex] call RH_ConnectCable;
 
 	// Transfering fuel
 	if(DebugCode) then { systemChat "Refueling"; };
 	[_plane] call RH_TransferFuel;
 
-	[_plane, _cable, _cableIndex] call RH_DisconnectCable;
+	[_plane, _pipe, _pipeIndex] call RH_DisconnectCable;
 };
 
 // Transfers fuel from the refueling plane to the player
@@ -504,18 +506,18 @@ RH_TransferFuel =
 
 
 // Updates 'Planes' global variable
-// Input: plane, cables
+// Input: plane, pipes
 // Output: none
 RH_UpdatePlanes =
 {
-	params["_plane", "_cables"];
+	params["_plane", "_pipes"];
 
 	{
 		if(_x isEqualTo _plane) exitWith
 		{
-			if!(_cables isEqualTo objNull) then
+			if!(_pipes isEqualTo objNull) then
 			{
-				_x setVariable["Cables", _cables];
+				_x setVariable["Pipes", _pipes];
 			}
 		};
 	} forEach Planes;
@@ -535,32 +537,32 @@ if(hasInterface) then
 	{
 		{
 			// Check if refueling plane is idle for some time
-			_cables = _x getVariable["Cables", objNull];
-			if(_cables isEqualTo objNull) exitWith { true };
-			_numOfCables = count _cables - 1;
+			_pipes = _x getVariable["Pipes", objNull];
+			if(_pipes isEqualTo objNull) exitWith { true };
+			_numOfCables = count _pipes - 1;
 			for "_i" from 0 to _numOfCables do
 			{
-				_cable = _cables select _i select 0;
-				_isOut = _cables select _i select 1;
-				_isTransferring = _cables select _i select 2;
-				// Check if the transferring from this cable and cable is out
+				_pipe = _pipes select _i select 0;
+				_isOut = _pipes select _i select 1;
+				_isTransferring = _pipes select _i select 2;
+				// Check if the transferring from this pipe and pipe is out
 				if(!(_isTransferring) && _isOut) then
 				{
-					_timer = _cable getVariable["IdleTimer", -1];
+					_timer = _pipe getVariable["IdleTimer", -1];
 					if(_timer == -1) then
 					{
-						_cable setVariable["IdleTimer", IDLE_TIME];
+						_pipe setVariable["IdleTimer", IDLE_TIME];
 						_timer = IDLE_TIME;
 					};
 					if(_timer == 0) then
 					{
 						// Times up
-						// Resetting timer and pulling cable up
-						_cable setVariable["IdleTimer", IDLE_TIME];
-						[_x, _cable, _i] call RH_PullCableUp;
+						// Resetting timer and pulling pipe up
+						_pipe setVariable["IdleTimer", IDLE_TIME];
+						[_x, _pipe, _i] call RH_PullCableUp;
 					};
 					_timer = _timer - 1;
-					_cable setVariable["IdleTimer", _timer];
+					_pipe setVariable["IdleTimer", _timer];
 				};
 			};
 		} forEach Planes;
@@ -606,30 +608,30 @@ if(hasInterface) then
 						_rPlaneFuel = _refuelingPlane getVariable["ExternalFuel", 0];
 						if(_rPlaneFuel > 0) then
 						{
-							// Checks if there are free cables
-							_cables = _refuelingPlane getVariable["Cables", objNull];
-							if(_cables isEqualTo objNull) exitWith { true };
-							_numOfCables = count _cables - 1;
+							// Checks if there are free pipes
+							_pipes = _refuelingPlane getVariable["Pipes", objNull];
+							if(_pipes isEqualTo objNull) exitWith { true };
+							_numOfCables = count _pipes - 1;
 							for "_i" from 0 to _numOfCables do
 							{
-								_cable = _cables select _i select 0;
-								_isOut = _cables select _i select 1;
-								_isTransferring = _cables select _i select 2;
+								_pipe = _pipes select _i select 0;
+								_isOut = _pipes select _i select 1;
+								_isTransferring = _pipes select _i select 2;
 								
 								if(!_isTransferring) exitWith
 								{
-									// Gets cable out
+									// Gets pipe out
 									if(!_isOut) then
 									{
-										[_refuelingPlane, _cable, _i] call RH_ReleaseCable;
+										[_refuelingPlane, _pipe, _i] call RH_ReleaseCable;
 										_isOut = true;
 									};
-									// Checks if player's plane is close to the end of the cable
-									_isPlayerPlaneCloseToCable = [_cable] call RH_IsPlayerPlaneCloseToCable;
+									// Checks if player's plane is close to the end of the pipe
+									_isPlayerPlaneCloseToCable = [_pipe] call RH_IsPlayerPlaneCloseToCable;
 									if(_isPlayerPlaneCloseToCable) then
 									{
 										// Refuel player's plane
-										[_refuelingPlane, _cable, _i] call RH_RefuelPlayerPlane;
+										[_refuelingPlane, _pipe, _i] call RH_RefuelPlayerPlane;
 									};
 								};
 							};
